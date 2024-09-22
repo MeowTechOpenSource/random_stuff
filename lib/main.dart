@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/dialog.dart';
+import 'package:flutter_application_2/dialogv2.dart';
+import 'package:flutter_svg/svg.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,9 +14,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Wall Defect Detection',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        fontFamily: 'HarmonyOS Sans TC',
         useMaterial3: true,
+        cardTheme: CardTheme(color: Color.fromARGB(255, 229, 229, 234)),
       ),
       home: const WallDefectDetectionPage(title: 'Wall Defect Detection'),
     );
@@ -68,24 +72,40 @@ class MyWidget extends StatelessWidget {
 }
 
 class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
-  int level1Defects = 3;
-  int level2Defects = 2;
-  int level3Defects = 1;
-  int totalDefects = 6;
+  int level1Defects = 7;
+  int level2Defects = 0;
+  int level3Defects = 0;
+  int totalDefects = 7;
   List defectsList = [
     {
-      'image': 'https://via.placeholder.com/150',
-      'suggestion': 'ABCD',
-      'severity': 3,
+      'image': 'assets/ss.png',
+      'suggestion':
+          'Repair affected parts as soon as possible to prevent further damages.',
+      'severity': 1,
+      'cracks': 8,
       'location': '11m - 20m'
     }
   ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 241, 243, 245),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Color.fromARGB(255, 241, 243, 245),
         title: Text(widget.title),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: CircleAvatar(
+              backgroundColor: Color.fromARGB(255, 242, 242, 242),
+              child: IconButton(
+                  onPressed: () {},
+                  icon: SvgPicture.asset(
+                    "assets/gearshape.svg",
+                  )),
+            ),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -98,7 +118,9 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    Icon(Icons.wifi_rounded),
+                    SvgPicture.asset(
+                      "assets/dot_radiowaves_left_and_right.svg",
+                    ),
                     SizedBox(
                       width: 10,
                     ),
@@ -107,24 +129,40 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                     Spacer(),
-                    IconButton(
-                        onPressed: () {}, icon: Icon(Icons.videocam_rounded)),
-                    Icon(Icons.battery_6_bar_outlined),
+                    TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return DialogPage();
+                            },
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              "assets/video_fill.svg",
+                            ),
+                            SizedBox(
+                              width: 5,
+                            ),
+                            Text("Live & Controls")
+                          ],
+                        )),
+                    SizedBox(
+                      width: 5,
+                    ),
+                    SvgPicture.asset(
+                      "assets/battery_75percent.svg",
+                    ),
+                    SizedBox(
+                      width: 5,
+                    ),
                     Text("90%")
                   ],
                 ),
               ),
             )),
-            ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return const DialogPage();
-                    },
-                  );
-                },
-                child: Text("EMERGENCY CONTROLS")),
             Container(
               width: double.infinity,
               child: Card(
@@ -140,7 +178,18 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                               style: Theme.of(context).textTheme.headlineSmall),
                           Spacer(),
                           IconButton(
-                              onPressed: () {}, icon: Icon(Icons.info_rounded))
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return Dialogv2();
+                                },
+                              );
+                            },
+                            icon: SvgPicture.asset(
+                              "assets/questionmark_circle.svg",
+                            ),
+                          )
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -207,15 +256,30 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                "Defects #" + index.toString(),
+                                "Defect Surface #" +
+                                    index.toString() +
+                                    "(Level " +
+                                    defectsList[index]["severity"].toString() +
+                                    ")",
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 25),
                               ),
                             ),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                defectsList[index]["cracks"].toString() +
+                                    " Cracks",
+                                style: TextStyle(fontSize: 15),
+                              ),
+                            ),
+                          ),
                           ClipRRect(
                               borderRadius: BorderRadius.circular(25),
-                              child: Image.network(
+                              child: Image.asset(
                                 defectsList[index]["image"],
                               )),
                           SizedBox(
@@ -224,7 +288,9 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.location_on_rounded),
+                              SvgPicture.asset(
+                                "assets/local_fill.svg",
+                              ),
                               SizedBox(
                                 width: 10,
                               ),
@@ -239,11 +305,17 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.settings_suggest_rounded),
+                                    Icon(Icons.star_rounded),
                                     SizedBox(
                                       width: 10,
                                     ),
-                                    Text(defectsList[index]["suggestion"]),
+                                    Expanded(
+                                      child: Text(
+                                        defectsList[index]["suggestion"],
+                                        maxLines: 20,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

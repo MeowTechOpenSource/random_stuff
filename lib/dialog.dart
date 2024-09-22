@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:video_player/video_player.dart';
 
 class DialogPage extends StatefulWidget {
   const DialogPage({super.key});
@@ -11,6 +13,28 @@ class DialogPage extends StatefulWidget {
 
 class _DialogPageState extends State<DialogPage> {
   @override
+  late VideoPlayerController _controller;
+  late Future<void> _initializeVideoPlayerFuture;
+  @override
+  void initState() {
+    super.initState();
+
+    // Create and store the VideoPlayerController. The VideoPlayerController
+    // offers several different constructors to play videos from assets, files,
+    // or the internet.
+    _controller = VideoPlayerController.asset("assets/GX010012.MP4");
+
+    _initializeVideoPlayerFuture = _controller.initialize();
+  }
+
+  @override
+  void dispose() {
+    // Ensure disposing of the VideoPlayerController to free up resources.
+    _controller.dispose();
+
+    super.dispose();
+  }
+
   Widget build(BuildContext context) {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 9, sigmaY: 9),
@@ -27,8 +51,8 @@ class _DialogPageState extends State<DialogPage> {
             ),
             Spacer(),
             IconButton(
-              icon: const Icon(
-                Icons.close_rounded,
+              icon: SvgPicture.asset(
+                "assets/xmark.svg",
                 color: Colors.white,
               ),
               onPressed: () {
@@ -55,7 +79,26 @@ class _DialogPageState extends State<DialogPage> {
               ),
               ClipRRect(
                   borderRadius: BorderRadius.circular(25),
-                  child: Image.network("https://picsum.photos/1920/1080")),
+                  child: FutureBuilder(
+                    future: _initializeVideoPlayerFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        // If the VideoPlayerController has finished initialization, use
+                        // the data it provides to limit the aspect ratio of the video.
+                        return AspectRatio(
+                          aspectRatio: _controller.value.aspectRatio,
+                          // Use the VideoPlayer widget to display the video.
+                          child: VideoPlayer(_controller),
+                        );
+                      } else {
+                        // If the VideoPlayerController is still initializing, show a
+                        // loading spinner.
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                    },
+                  )),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -87,7 +130,9 @@ class _DialogPageState extends State<DialogPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.arrow_downward_rounded),
+                            SvgPicture.asset(
+                              "assets/arrowtriangle_down_fill.svg",
+                            ),
                             Text("LAND NOW")
                           ],
                         )),
@@ -99,7 +144,12 @@ class _DialogPageState extends State<DialogPage> {
                         onPressed: () {},
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: [Icon(Icons.home_rounded), Text("DOCK")],
+                          children: [
+                            SvgPicture.asset(
+                              "assets/house_fill.svg",
+                            ),
+                            Text("DOCK")
+                          ],
                         )),
                   ),
                 ],
@@ -115,7 +165,9 @@ class _DialogPageState extends State<DialogPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.arrow_upward_rounded),
+                            SvgPicture.asset(
+                              "assets/arrowtriangle_up_fill.svg",
+                            ),
                             Text("TAKE OFF")
                           ],
                         )),
