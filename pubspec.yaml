@@ -37,6 +37,16 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_svg: ^2.0.10+1
   video_player: ^2.9.1
+  ntfluttery: ^0.1.1
+  flutter_background_service: ^5.0.10
+  vibration: ^2.0.1
+  volume_controller: ^2.0.8
+  flutter_tts: ^4.0.2
+  flutter_beep: ^1.0.0
+  real_volume: ^1.0.9
+  fluttertoast: ^8.2.8
+  http: ^1.2.2
+  device_info_plus: ^11.0.0
 
 dev_dependencies:
   flutter_test:

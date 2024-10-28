@@ -1,10 +1,160 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:ui';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/dialog.dart';
 import 'package:flutter_application_2/dialogv2.dart';
+import 'package:flutter_application_2/ems.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_beep/flutter_beep.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:ntfluttery/ntfluttery.dart';
+import 'package:real_volume/real_volume.dart';
+import 'package:vibration/vibration.dart';
+import 'package:volume_controller/volume_controller.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-void main() {
+FlutterTts flutterTts = FlutterTts();
+final GlobalKey<NavigatorState> navigatorKey =
+    GlobalKey(debugLabel: "Main Navigator");
+var last = '';
+var emergency = false;
+final deviceInfoPlugin = DeviceInfoPlugin();
+BaseDeviceInfo? deviceInfo;
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeService();
   runApp(const MyApp());
+}
+
+void startBackgroundService() {
+  final service = FlutterBackgroundService();
+  service.startService();
+}
+
+void stopBackgroundService() {
+  final service = FlutterBackgroundService();
+  service.invoke("stop");
+}
+
+Future<void> initializeService() async {
+  final service = FlutterBackgroundService();
+
+  await service.configure(
+    iosConfiguration: IosConfiguration(
+      autoStart: true,
+      onForeground: onStart,
+      onBackground: onIosBackground,
+    ),
+    androidConfiguration: AndroidConfiguration(
+      autoStart: true,
+      onStart: onStart,
+      isForegroundMode: true,
+      autoStartOnBoot: true,
+    ),
+  );
+  bool? isPermissionGranted = await RealVolume.isPermissionGranted();
+
+  while (!isPermissionGranted!) {
+    // Opens Do Not Disturb Access settings to grant the access
+    Fluttertoast.showToast(
+        msg:
+            "Please select flutter_application_2 and enable DND settings to allow app to run in background.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        textColor: Colors.white,
+        fontSize: 16.0);
+    await RealVolume.openDoNotDisturbSettings();
+    isPermissionGranted = await RealVolume.isPermissionGranted();
+  }
+
+  startBackgroundService();
+}
+
+@pragma('vm:entry-point')
+Future<bool> onIosBackground(ServiceInstance service) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+
+  return true;
+}
+
+String formatJson(String jsonString) {
+  // Parse the JSON string
+  final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+  // Create a list to hold formatted lines
+  List<String> formattedLines = [];
+
+  // Iterate over the key-value pairs in the JSON
+  jsonData.forEach((key, value) {
+    if (value is List) {
+      // If the value is a List, format it accordingly
+      formattedLines.add('\n$key:');
+      for (var item in value) {
+        formattedLines.add('-$item');
+      }
+    } else {
+      // Otherwise, just add the key-value pair
+      formattedLines.add('$key:$value');
+    }
+  });
+
+  // Join the formatted lines with newline characters
+  return formattedLines.join('\n');
+}
+
+@pragma('vm:entry-point')
+void onStart(ServiceInstance service) async {
+  final client = NtflutteryService(
+      credentials: Credentials(
+          username: 'emergencybroadcast',
+          password: 'emergencybroadcastsystem'));
+  //client.addLogging(true);
+  deviceInfo = await deviceInfoPlugin.deviceInfo;
+  Timer.periodic(const Duration(seconds: 5), (timer) async {
+    final result = await client.getLatestMessage(
+        'https://push.meowtechopensource.com/emergencybroadcast/json?poll=1');
+    final url = 'https://push.meowtechopensource.com/ebs';
+    var allInfo = '';
+    try {
+      allInfo = formatJson(jsonEncode(deviceInfo!.data));
+    } catch (e) {
+      allInfo = e.toString();
+    }
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'text/plain; charset=utf-8'},
+      body: 'Device Online, ' + allInfo.toString(),
+    );
+    //print(response.body);
+    if (last == "") {
+      last = result.toJson;
+    } else {
+      int i = 0;
+      if (last != result.toJson) {
+        last = result.toJson;
+        Timer.periodic(Duration(seconds: 1), (timer) {
+          VolumeController().setVolume(100, showSystemUI: false);
+          RealVolume.setVolume(1, showUI: true, streamType: StreamType.RING);
+          Vibration.vibrate(duration: 100);
+          FlutterBeep.playSysSound(AndroidSoundIDs.TONE_CDMA_ABBR_ALERT);
+          emergency = !emergency;
+          if (i == 30) {
+            timer.cancel();
+          }
+          i++;
+        });
+        flutterTts.speak(jsonDecode(last)["message"]);
+        await flutterTts.awaitSpeakCompletion(true);
+      }
+    }
+  });
+  // Received the data as a touple ready to be used.
 }
 
 class MyApp extends StatelessWidget {
@@ -13,6 +163,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Wall Defect Detection',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -89,7 +240,8 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 241, 243, 245),
+      backgroundColor:
+          emergency ? Colors.red : Color.fromARGB(255, 241, 243, 245),
       appBar: AppBar(
         backgroundColor: Color.fromARGB(255, 241, 243, 245),
         title: Text(widget.title),

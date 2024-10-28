@@ -25,6 +25,8 @@ class _DialogPageState extends State<DialogPage> {
     _controller = VideoPlayerController.asset("assets/GX010012.MP4");
 
     _initializeVideoPlayerFuture = _controller.initialize();
+    _controller.play();
+    _controller.setVolume(0);
   }
 
   @override
