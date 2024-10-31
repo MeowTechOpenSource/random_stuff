@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/constants.dart';
 import 'package:flutter_application_2/dialog.dart';
 import 'package:flutter_application_2/dialogv2.dart';
 import 'package:flutter_svg/svg.dart';
@@ -99,7 +100,9 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
             child: CircleAvatar(
               backgroundColor: Color.fromARGB(255, 242, 242, 242),
               child: IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    setState(() {});
+                  },
                   icon: SvgPicture.asset(
                     "assets/gearshape.svg",
                   )),
@@ -197,31 +200,31 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: MyWidget(
-                              name: 'Level 1',
-                              value: level1Defects,
-                              color: Colors.lightGreen.shade200,
-                            ),
-                          ),
-                          Expanded(
-                            child: MyWidget(
-                              name: 'Level 2',
-                              value: level2Defects,
-                              color: Colors.yellowAccent.shade100,
-                            ),
-                          ),
-                          Expanded(
-                            child: MyWidget(
-                              name: 'Level 3',
-                              value: level3Defects,
-                              color: Colors.red.shade200,
-                            ),
-                          ),
+                          // Expanded(
+                          //   child: MyWidget(
+                          //     name: 'Level 1',
+                          //     value: level1Defects,
+                          //     color: Colors.lightGreen.shade200,
+                          //   ),
+                          // ),
+                          // Expanded(
+                          //   child: MyWidget(
+                          //     name: 'Level 2',
+                          //     value: level2Defects,
+                          //     color: Colors.yellowAccent.shade100,
+                          //   ),
+                          // ),
+                          // Expanded(
+                          //   child: MyWidget(
+                          //     name: 'Level 3',
+                          //     value: level3Defects,
+                          //     color: Colors.red.shade200,
+                          //   ),
+                          // ),
                           Expanded(
                             child: MyWidget(
                               name: 'Total',
-                              value: totalDefects,
+                              value: crackNums,
                               color: Colors.red.shade200,
                             ),
                           ),
@@ -236,16 +239,12 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: defectsList.length,
+              itemCount: combinedList.length,
               itemBuilder: (context, index) {
                 return Container(
                   width: double.infinity,
                   child: Card(
-                    color: (defectsList[index]["severity"] == 1)
-                        ? Colors.lightGreen.shade200
-                        : (defectsList[index]["severity"] == 2)
-                            ? Colors.yellow.shade100
-                            : Colors.red.shade200,
+                    color: Colors.red.shade200,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Column(
@@ -256,31 +255,17 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                "Defect Surface #" +
-                                    index.toString() +
-                                    "(Level " +
-                                    defectsList[index]["severity"].toString() +
-                                    ")",
+                                "Group Of Cracks #" + index.toString(),
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 25),
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(3.0),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                defectsList[index]["cracks"].toString() +
-                                    " Cracks",
-                                style: TextStyle(fontSize: 15),
-                              ),
-                            ),
-                          ),
                           ClipRRect(
                               borderRadius: BorderRadius.circular(25),
-                              child: Image.asset(
-                                defectsList[index]["image"],
+                              child: Image.network(
+                                "http://192.168.0.250:5000/" +
+                                    combinedList[index][2],
                               )),
                           SizedBox(
                             height: 20,
@@ -294,7 +279,10 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                               SizedBox(
                                 width: 10,
                               ),
-                              Text(defectsList[index]["location"]),
+                              Text(combinedList[index][0].toString() +
+                                  "m, " +
+                                  combinedList[index][1].toString() +
+                                  "m"),
                             ],
                           ),
                           Container(
@@ -311,7 +299,7 @@ class _WallDefectDetectionPageState extends State<WallDefectDetectionPage> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        defectsList[index]["suggestion"],
+                                        "Fix Soon",
                                         maxLines: 20,
                                         overflow: TextOverflow.ellipsis,
                                       ),

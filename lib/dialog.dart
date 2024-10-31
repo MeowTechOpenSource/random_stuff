@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/capture.dart';
+import 'package:flutter_application_2/test.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:video_player/video_player.dart';
 
@@ -12,27 +14,33 @@ class DialogPage extends StatefulWidget {
 }
 
 class _DialogPageState extends State<DialogPage> {
+  int x = 0;
+  int y = 0;
+  bool _isLoading = false;
+  CaptureResult? _lastResult;
+  final CrackDetectionService _service = CrackDetectionService();
   @override
-  late VideoPlayerController _controller;
-  late Future<void> _initializeVideoPlayerFuture;
   @override
   void initState() {
     super.initState();
-
-    // Create and store the VideoPlayerController. The VideoPlayerController
-    // offers several different constructors to play videos from assets, files,
-    // or the internet.
-    _controller = VideoPlayerController.asset("assets/GX010012.MP4");
-
-    _initializeVideoPlayerFuture = _controller.initialize();
   }
 
-  @override
-  void dispose() {
-    // Ensure disposing of the VideoPlayerController to free up resources.
-    _controller.dispose();
+  Future<void> _capture(int x, int y) async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    super.dispose();
+    try {
+      final result = await _service.captureAndAnalyze(x, y);
+      setState(() {
+        _lastResult = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Widget build(BuildContext context) {
@@ -77,103 +85,82 @@ class _DialogPageState extends State<DialogPage> {
                       fontWeight: FontWeight.w400),
                 ),
               ),
-              ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: FutureBuilder(
-                    future: _initializeVideoPlayerFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        // If the VideoPlayerController has finished initialization, use
-                        // the data it provides to limit the aspect ratio of the video.
-                        return AspectRatio(
-                          aspectRatio: _controller.value.aspectRatio,
-                          // Use the VideoPlayer widget to display the video.
-                          child: VideoPlayer(_controller),
-                        );
-                      } else {
-                        // If the VideoPlayerController is still initializing, show a
-                        // loading spinner.
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                    },
-                  )),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Emergency Controls",
-                  style: TextStyle(
-                      fontSize: 32,
-                      color: Colors.red.shade300,
-                      fontWeight: FontWeight.w400),
+              Center(
+                child: Container(
+                  height: 250,
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    // Use the VideoPlayer widget to display the video.
+                    child: ClipRRect(child: VideoScreen()),
+                  ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Emergency Controls are used when the drone is out of control, out of reach or in any case of emergency. Do not use when not neccessary",
-                  style: TextStyle(
-                    fontSize: 15,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: MaterialButton(
+                        height: 50,
+                        color: Colors.white,
+                        onPressed: () {
+                          y += 1;
+                          _capture(x, y);
+                        },
+                        child: Text("^")),
+                  ),
+                  Expanded(
+                    child: MaterialButton(
+                        height: 50,
+                        color: Colors.white,
+                        onPressed: () {
+                          y -= 1;
+                          _capture(x, y);
+                        },
+                        child: Text("v")),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: MaterialButton(
+                        height: 50,
+                        color: Colors.white,
+                        onPressed: () {
+                          x -= 1;
+                          _capture(x, y);
+                        },
+                        child: Text("<")),
+                  ),
+                  Expanded(
+                    child: MaterialButton(
+                        height: 50,
+                        color: Colors.white,
+                        onPressed: () {
+                          x += 1;
+                          _capture(x, y);
+                        },
+                        child: Text(">")),
+                  ),
+                ],
+              ),
+              Text(
+                "Metres: " + x.toString() + "," + y.toString(),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              Expanded(
+                child: MaterialButton(
+                    height: 50,
                     color: Colors.white,
-                  ),
-                ),
+                    onPressed: () {
+                      _service.fetchMergedImage();
+                    },
+                    child: Text("DONE")),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: MaterialButton(
-                        height: 100,
-                        color: Colors.red.shade300,
-                        onPressed: () {},
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              "assets/arrowtriangle_down_fill.svg",
-                            ),
-                            Text("LAND NOW")
-                          ],
-                        )),
-                  ),
-                  Expanded(
-                    child: MaterialButton(
-                        height: 100,
-                        color: Colors.red.shade300,
-                        onPressed: () {},
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              "assets/house_fill.svg",
-                            ),
-                            Text("DOCK")
-                          ],
-                        )),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: MaterialButton(
-                        height: 100,
-                        color: Colors.red.shade300,
-                        onPressed: () {},
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              "assets/arrowtriangle_up_fill.svg",
-                            ),
-                            Text("TAKE OFF")
-                          ],
-                        )),
-                  ),
-                ],
-              )
             ],
           ),
         ),
